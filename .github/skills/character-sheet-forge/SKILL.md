@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create, test, edit, and validate character reference sheets from reference images. Activate for requests about character turnaround sheets, 2x2 four-panel character sheets, front/back/side orthographic views, face close-ups, featureless-face panels, costume consistency, character model sheets, prompt optimization, or testing/updating this skill. Chinese triggers include 角色三视图、四宫格、角色设定图、正背侧视图、正面脸部特写、左上无五官、标准转面、服装一致性、测试skill、更新skill。 Use when the user explicitly invokes /character-sheet-forge or asks to use Character Sheet Forge."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.11.0"
+  version: "1.12.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.11.0。基于多轮角色图测试，强化道具跨视图锁定、参考图裁切细节的保守推断、严格侧视与分面板回归验收。
+> 版本：1.12.0。新增右上正脸特写的独立验收门槛、失败隔离与拼版回归规则，减少清晰但偏转头部的结果误判。
 
 ## 0. 触发范围与执行契约
 
@@ -170,6 +170,29 @@ metadata:
 - **焦点与表情：** 眼睛、眉毛、鼻子、嘴巴和面部轮廓全部清晰对焦；自然中性表情，不微笑、不皱眉、不张嘴做夸张表情。
 - **造型保留：** 忠实保留参考图中的发型、眼镜、妆容和面部可见特征；允许刘海自然覆盖少量额头，但不得遮住关键五官。
 - 不允许面部模糊、马赛克、遮挡、景深虚化或运动模糊。如果右上格虽清晰但景别过远、不是正脸，或头部被明显转成 3/4 角度，仍判定该硬性项目 `FAIL`。
+
+### 右上正脸特写独立验收门槛（v1.12.0）
+
+右上格必须同时满足“正面角度、脸部特写、五官清晰”三项，任一项失败都不能由另外两项抵消。不得把“脸看得清楚”误判为“正脸合格”。
+
+**生成前锁定**
+- 将右上格定义为独立的正面脸部特写任务；提示词中明确写入：头部正对镜头、双眼完整可见且视觉大小接近、鼻梁接近面部中轴、面部左右轮廓大致平衡、头部无明显倾斜。
+- 构图必须从发顶至下巴完整入镜，头部约占面板高度的 75%–90%；肩部仅在底边少量出现。
+- 参考图若本身为侧脸或 3/4 角度，只将其用于锁定角色身份、发型、妆容与可见设计；目标视角仍按本 Skill 的正面硬约束执行。对参考图无法支持的遮挡区域，不得编造醒目细节。
+
+**独立验收（逐项记录）**
+- [ ] PASS/FAIL/NOT_VERIFIED — 头部正对镜头，无明显左右转头或歪头。
+- [ ] PASS/FAIL/NOT_VERIFIED — 双眼均完整可见，大小与位置自然平衡；鼻梁接近面部中轴。
+- [ ] PASS/FAIL/NOT_VERIFIED — 发顶至下巴完整入镜，头部占面板高度约 75%–90%。
+- [ ] PASS/FAIL/NOT_VERIFIED — 眉、眼、鼻、口清晰，无失焦、遮挡或运动模糊。
+- [ ] PASS/FAIL/NOT_VERIFIED — 与其他面板的发色、刘海、发饰、肤色和角色身份一致。
+
+**失败隔离与修复**
+1. 若右上格清晰但呈 3/4 角度、侧脸或明显歪头，直接判该面板 FAIL；不得用整体清晰度或角色相似度覆盖此失败。
+2. 优先单独重生成右上格，使用正面参考/身份锚点，并明确：front-facing, square to camera, no yaw, no head tilt, both eyes equally visible, centered nose。避免重生成整张四宫格，以免已通过面板发生漂移。
+3. 若只能使用整图生成，先保留候选图并标记右上格失败；仅在工具确实支持可靠的面板替换和拼版时替换该格。不得声称未受影响的面板像素完全不变，除非实际比较验证。
+4. 替换后重新检查四格边界、右上正脸角度、头部占比、清晰度以及跨视图角色一致性。拼版、缩放或导出后若无法重新查看最终文件，相关项目标记 NOT_VERIFIED。
+5. 若工具无法稳定生成正脸，输出明确的失败说明和可复用的定向修复提示词；不得将近似正脸标为 PASS。
 
 ### 面部局部修复规范（用于避免误改其他区域）
 
