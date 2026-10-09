@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create and refine character reference sheets from user-provided images. Use when generating, editing, or validating 2x2 character sheets, front/back/side turnarounds, consistent character views, featureless-face panels, or image-generation prompts for character design."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.6.0。强化右上格“正面脸部特写”的景别定义、面部占画比例、正脸角度与构图验收；避免退化为肩部以上常规人像或三分之二侧脸。其余固定四宫格、左上无五官、参考图一致性和失败回退规则保持不变。
+> 版本：1.7.0。明确三视图必须采用标准角色设定转面姿势（中立、对称、静态站姿），不得复制参考图中的动态动作；同时保留右上格正面脸部特写、左上无五官、固定四宫格与角色设计一致性规则。
 
 ## 0. 触发范围与执行契约
 
@@ -93,6 +93,16 @@ metadata:
 - 生成后检查中线位置、四格边界、面板顺序与画面比例。仅凭“看起来像四宫格”不算通过。
 - 不允许把单张四格图再次整体拉伸来适配比例；应使用等比例缩放与留白，避免角色变胖、变瘦或头身比变化。
 - 三个全身面板的角色高度应尽可能接近；特写面板只允许按特写构图放大面部，不得改变角色本身比例。
+
+### 标准三视图姿势（硬约束）
+
+- 三个全身视图是用于角色设定与建模对照的**标准转面图（turnaround）**，不是动作展示图。统一使用静态、中立、放松、可测量的标准站姿；禁止照搬参考照片里的摆拍、走路、扭腰、倾斜重心、抬腿、提裙、叉腰、挥手或其他动态动作。
+- **正面（左上）：** 身体直立，躯干与骨盆朝正前方，头部端正，肩线水平；双臂自然下垂并与躯干留出少量间隙，双手放松、手指自然伸展且可辨；双腿自然伸直、重心均匀分布，双脚平稳着地，脚尖朝前。不要刻意摆出时装模特姿势。
+- **背面（左下）：** 同样直立、头部端正、肩线水平、双臂自然下垂且略离开躯干、双腿平稳；身体正后方对准镜头。手臂与腿部位置应与正面视图对应，不得新增转头、扭腰或单腿屈膝动作。
+- **左侧面（右下）：** 身体严格旋转 90° 朝向画面左侧；头、胸腔、骨盆与双脚朝向一致，保持中立站姿，不前倾、不后仰、不扭转躯干。双臂自然下垂，近侧手臂不得遮住整个躯干轮廓；双腿自然并立或仅有必要的轻微前后错位以区分轮廓，不做迈步动作。
+- 三视图使用统一的正交/近似正交角色设定视角，避免广角透视和明显镜头透视；地面基线、人物比例、镜头高度与全身尺度保持一致。侧视图是严格 90° 侧面，不是 3/4 角度。
+- 服装可以自然垂落，但不得为展示裙摆或配件而主动抬手、拉扯、掀起或展开衣物。复杂服装以中立站姿下真实自然的垂坠形态呈现。
+- 若参考图是动态姿势，提取并保留角色的外观、服装、材质、配色与配饰；**只把姿势标准化**。只有用户明确要求保留原始动态/动作姿势时，才允许覆盖本条标准转面规则。
 
 ## 3. 左上格无五官规则（最高优先级）
 
@@ -347,12 +357,15 @@ metadata:
 
 ### B. 视角与构图
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 四格均为平视机位。
-- [ ] `PASS/FAIL/NOT_VERIFIED` — 左上人物正对镜头、标准放松站姿、双手自然下垂。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 左上人物正对镜头，采用标准中立站姿；躯干端正、肩线水平、双臂自然下垂且略离开躯干、双脚平稳着地。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 三个全身视图均为静态标准转面姿势，不含走路、抬腿、扭腰、倾斜重心、提裙、叉腰或其他动态摆拍动作。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 正面、背面、侧面三视图的头部、肩线、骨盆、手臂和腿部姿势相互对应，未因视角切换而变成不同动作。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 三视图采用平视、低透视或正交式角色设定视角，人物垂直基线与全身尺度一致。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上是脸部景别的紧凑正面特写，而非普通肩部以上肖像；头顶至下巴完整入镜，头部约占面板高度 75%–90%。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上头部正对镜头、眼睛平视，鼻梁接近中轴、双眼均可见；没有 3/4 角度、侧脸、明显歪头或俯仰机位。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上颈部/肩部只在底边少量出现，胸口和上半身没有抢占画面；脸部成为画面主体。
-- [ ] `PASS/FAIL/NOT_VERIFIED` — 左下为背对镜头的自然站姿。
-- [ ] `PASS/FAIL/NOT_VERIFIED` — 右下为严格 90° 左侧面，人物面朝画面左侧，不是 3/4 侧面。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 左下为背对镜头的标准中立站姿，肩线水平，双臂与正面图对应。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右下为严格 90° 左侧面标准站姿，人物面朝画面左侧，不是 3/4 侧面；头、躯干、骨盆与脚部朝向一致，无前倾、后仰或迈步。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左上、左下、右下均从头到脚完整可见，双脚和鞋底未裁切。
 
 ### C. 无五官规则
@@ -400,13 +413,15 @@ metadata:
 ```text
 Create a high-quality 9:16 vertical character reference sheet arranged as a mathematically even 2x2 grid of four equal-width and equal-height panels, with no borders or divider lines. Keep all panel boundaries aligned; no panel may cross the center line. Use the exact same character from the reference image in every panel. Preserve the original design faithfully wherever visible in the reference: outfit construction, hairstyle silhouette, hair color, accessories, body proportions, materials, color palette, makeup style, and visual medium. Do not invent distinctive details in areas hidden or cropped out of the reference; use the simplest neutral continuation only when a full-body view requires it. {CHARACTER ANCHORS}. Clean neutral studio background, consistent soft key light and gentle fill, consistent white balance and exposure, natural contact shadows, crisp material separation, realistic fabric folds and stitching, detailed leather and metal hardware, clean hair strand grouping, natural skin texture in the clear portrait, anatomically correct hands and feet, balanced negative space, eye-level camera in all panels, matched scale across full-body views, no perspective distortion. High-resolution clean output with fine but natural detail; no plastic skin, no fake HDR, no oversharpening, no compression artifacts.
 
-TOP-LEFT PANEL: Full-body front view, standing straight in a neutral relaxed pose, facing directly toward the camera, arms resting naturally at the sides. Show the entire body from the top of the head to the bottoms of both shoes; do not crop any part. The face must have NO visible facial features: no eyes, eyeballs, eyelids, eyebrows, nose, nostrils, lips, or mouth line. Preserve a smooth, natural skin surface with believable facial volume, skin tone, and lighting. This is not blur, mosaic, a mask, or hair covering the face. Keep the face outline, hairline, bangs, ears, neck, and accessories intact. If needed, remove the features with localized inpainting only inside the facial skin region after generation.
+TOP-LEFT PANEL: Full-body FRONT ORTHOGRAPHIC TURNAROUND VIEW in a standardized neutral standing pose, facing directly toward the camera. Stand upright with level shoulders and pelvis, head level, weight evenly distributed on both feet, both feet flat and pointing forward. Arms hang naturally with a small consistent gap from the torso; hands relaxed and fingers visible. No fashion-model pose, no hip shift, no torso twist, no bent knee, no lifted leg, no walking, no gesture, and no holding or lifting the clothing. Show the entire body from the top of the head to the bottoms of both shoes; do not crop any part. The face must have NO visible facial features: no eyes, eyeballs, eyelids, eyebrows, nose, nostrils, lips, or mouth line. Preserve a smooth, natural skin surface with believable facial volume, skin tone, and lighting. This is not blur, mosaic, a mask, or hair covering the face. Keep the face outline, hairline, bangs, ears, neck, and accessories intact. If needed, remove the features with localized inpainting only inside the facial skin region after generation.
 
 TOP-RIGHT PANEL: A TIGHT, FRONT-FACING FACE CLOSE-UP, NOT a generic shoulders-up portrait. The head faces the camera squarely at eye level; no three-quarter turn, no side view, no tilted head, no high or low camera angle. Frame the complete head from the top of the hairstyle to the chin. The head occupies approximately 75–90% of the panel height; the face is the dominant subject, centered with balanced side margins. Only a small amount of neck or shoulder may appear along the bottom edge; do not show a prominent chest or upper torso. Both eyes must be visible and balanced in size, the nose close to the facial centerline, and the eyebrows, eyes, nose, lips, and chin all fully inside the frame. Preserve reference-specific hair, glasses, makeup, and facial features without letting them obscure key features. Neutral expression. Every facial feature must be crisp and clearly focused. Absolutely no blur, mosaic, obstruction, defocus, three-quarter angle, side profile, or distant portrait framing.
 
-BOTTOM-LEFT PANEL: Full-body back view, relaxed natural standing pose, facing away from the camera. Show the complete head-to-toe silhouette and both shoes, including the back hairstyle and back construction of the exact same outfit.
+BOTTOM-LEFT PANEL: Full-body BACK ORTHOGRAPHIC TURNAROUND VIEW in the exact same standardized neutral standing pose as the front view, directly facing away from the camera. Keep the head level, shoulders horizontal, arms hanging naturally with a small gap from the torso, hands relaxed, legs straight and weight evenly distributed. Align the arm and leg positions with the front view; no head turn, hip shift, torso twist, bent knee, lifted leg, walking, or gesture. Show the complete head-to-toe silhouette and both shoes, including the back hairstyle and back construction of the exact same outfit.
 
-BOTTOM-RIGHT PANEL: Full-body strict 90-degree LEFT SIDE PROFILE, the character's face and body oriented toward the LEFT edge of the image. This must be a true side view, NOT a three-quarter view. Relaxed natural standing pose; show the complete body from head to the bottoms of both shoes.
+BOTTOM-RIGHT PANEL: Full-body LEFT SIDE ORTHOGRAPHIC TURNAROUND VIEW, rotated exactly 90 degrees and facing the left edge of the image, not a three-quarter view. Keep a standardized neutral standing pose: head, chest, pelvis, and feet aligned toward the left; torso upright with no forward/backward lean or twist; arms relaxed at the sides; legs in a stable standing position, not walking. Avoid wide-angle perspective. Show the entire body from head to shoe soles.
+
+OLD BOTTOM-RIGHT PANEL REMOVED: the character's face and body oriented toward the LEFT edge of the image. This must be a true side view, NOT a three-quarter view. Relaxed natural standing pose; show the complete body from head to the bottoms of both shoes.
 
 All four panels show the exact same character and consistent outfit. No text, no watermark, no labels, no extra people, no panel borders, no cropped head or feet, no missing shoes, no altered costume, no invented ornaments, no swapped panel order, no bad anatomy, no extra fingers, no fused limbs, no inconsistent lighting, no mismatched color grading, no plastic skin, no oversharpening, no fake HDR, no compression artifacts. The featureless-face rule applies ONLY to the top-left panel; the top-right face remains fully sharp and shows complete facial features. Prioritize layout, viewing angles, full-body completeness, and featureless-face rules over decorative effects.
 ```
@@ -416,13 +431,13 @@ All four panels show the exact same character and consistent outfit. No text, no
 ```text
 生成一张高质量 9:16 竖版、严格等分的 2×2 四宫格人物角色参考图，四格等宽等高、中心分界对齐、无边框、无分隔线，任何面板都不得跨越中线。四格必须是参考图中的同一个角色，在参考图可见范围内忠实保留原设计：服装结构、发型轮廓、发色、配饰、体型比例、材质、配色、妆容风格与整体视觉媒介。不得为参考图未展示的区域擅自编造醒目的新设计；必须补全全身时，仅采用最简洁、中性的延续方案。角色锚点：{角色锚点}。背景干净统一，影棚柔和主光与自然补光，四格曝光、白平衡和光线方向一致，接触阴影自然，材质层次清楚；布料褶皱与缝线细致，皮革和金属配件质感明确，头发发束分组自然，清晰特写保留自然皮肤纹理；手脚结构准确，人物四周留白合理，三个全身视图尺度接近。四格全部平视机位，人体比例自然，无透视畸变。高分辨率、细节清楚但不过度锐化，避免塑料皮肤、假 HDR、压缩伪影与重复纹理。
 
-左上格：正面全身图，人物正对镜头，标准放松站姿，双手自然下垂。从头顶到双脚鞋底完整入镜，不得裁切。面部必须完全没有可见五官：不显示眼睛、眼球、眼睑线、眉毛、鼻梁、鼻尖、鼻孔、嘴唇或嘴线。保留自然平滑的肤色、脸部体积感与光影，不得使用模糊、马赛克、头发遮挡或面具效果替代。脸部轮廓、发际线、刘海、耳朵、颈部和饰品保持原样；必要时在生成后仅对面部皮肤区域做局部修复。
+左上格：正面全身标准转面图。人物正对镜头，直立中立站姿，头部端正、肩线与骨盆水平，重心均匀落在双脚上，双脚平稳着地且脚尖朝前；双臂自然下垂并与躯干留出少量间隙，双手放松、手指清楚可辨。不得使用模特摆拍姿势，不得扭腰、侧髋、屈膝、抬腿、迈步、做手势或提拉衣物。从头顶到双脚鞋底完整入镜，不得裁切。面部必须完全没有可见五官：不显示眼睛、眼球、眼睑线、眉毛、鼻梁、鼻尖、鼻孔、嘴唇或嘴线。保留自然平滑的肤色、脸部体积感与光影，不得使用模糊、马赛克、头发遮挡或面具效果替代。脸部轮廓、发际线、刘海、耳朵、颈部和饰品保持原样；必要时在生成后仅对面部皮肤区域做局部修复。
 
 右上格：紧凑的正面脸部特写（不是普通肩部以上肖像）。头部正对镜头、眼睛平视，无 3/4 转头、侧脸、明显歪头或俯仰机位。完整保留发顶至下巴，头部约占该格高度的 75%–90%，脸部居中；颈部/肩部仅可在底边少量出现，胸口和上半身不得成为主体。双眼均完整可见且大小自然平衡，鼻梁接近面部中轴，眉毛、眼睛、鼻子、嘴唇和下巴均清晰入镜。保留参考图的发型、眼镜与妆容，但不得遮挡关键五官。中性表情，所有五官锐利清晰。严禁模糊、马赛克、遮挡、失焦或远景肖像构图。
 
-左下格：背面全身图，人物背对镜头，自然放松站立，完整展示从头顶到鞋底的整体轮廓、发型背面与服装后背，双脚和鞋子完整可见。
+左下格：背面全身标准转面图。人物身体正后方朝向镜头，保持与正面图对应的中立站姿：头部端正、肩线水平、双臂自然下垂并略离开躯干、双腿稳定伸直、重心均匀。不得转头、扭腰、侧髋、屈膝、抬腿或做动作。完整展示从头顶到鞋底的整体轮廓、发型背面与服装后背，双脚和鞋子完整可见。
 
-右下格：严格 90° 左侧面全身图，人物面部与身体朝向画面左边缘，必须是纯侧面，不是四分之三侧面。自然放松站立，从头顶到鞋底完整入镜。
+右下格：严格 90° 左侧面全身标准转面图，人物面部、头部、胸腔、骨盆与双脚统一朝向画面左边缘，必须是纯侧面，不是四分之三侧面。保持中立直立站姿，不前倾、不后仰、不扭转躯干、不迈步；双臂自然下垂，腿部稳定站立。使用平视、低透视或正交式角色设定视角，从头顶到鞋底完整入镜。
 
 四格必须为同一角色，服装与发型保持一致。禁止文字、水印、标签、额外人物、格子边框、头部或脚部裁切、鞋子缺失、擅自添加装饰、服装改变、四格顺序错乱、人体畸形、多余手指、肢体黏连、光线不一致、色调不一致、塑料皮肤、过度锐化、假 HDR、压缩伪影和重复纹理。无五官规则只应用于左上格；右上格必须完整清晰地显示眼睛、眉毛、鼻子和嘴巴。布局、角度、全身完整度和无五官规则优先于装饰性效果。
 ```
@@ -434,6 +449,7 @@ All four panels show the exact same character and consistent outfit. No text, no
 | 失败情况 | 修正方向 |
 |---|---|
 | 四格顺序错误 | 在提示词开头和每格标题中重复固定位置与内容；必要时先分别生成四格再合成 |
+| 三视图出现动态摆拍/动作不一致 | 明确 `standard neutral standing turnaround pose, evenly distributed weight, arms relaxed slightly away from torso, both feet flat, no hip shift, no bent knee, no lifted leg, no walking, no gesture, no holding or lifting clothing`；分别修复对应面板并复核三视图姿势对应关系 |
 | 右下变成 3/4 侧面 | 强化 `strict 90-degree left side profile, facing left, not three-quarter view` |
 | 全身格裁切脚部 | 增加人物与画面边缘的留白，明确 `full head-to-sole view, both shoes fully visible, no cropping` |
 | 左上仍残留五官 | 不使用模糊；仅在左上格面部皮肤范围进行局部修复，清除眼、眉、鼻、口及残影 |
