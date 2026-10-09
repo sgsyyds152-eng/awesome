@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create and refine character reference sheets from user-provided images. Use when generating, editing, or validating 2x2 character sheets, front/back/side turnarounds, consistent character views, featureless-face panels, or image-generation prompts for character design."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.7.0。明确三视图必须采用标准角色设定转面姿势（中立、对称、静态站姿），不得复制参考图中的动态动作；同时保留右上格正面脸部特写、左上无五官、固定四宫格与角色设计一致性规则。
+> 版本：1.8.0。根据实测补强标准转面图的正交视图与几何对齐、跨视图服装结构锚点、细节一致性验收，以及分面板生成、精确拼版和回归检查策略；保留标准中立站姿、右上正面脸部特写、左上无五官与固定四宫格规则。
 
 ## 0. 触发范围与执行契约
 
@@ -101,6 +101,8 @@ metadata:
 - **背面（左下）：** 同样直立、头部端正、肩线水平、双臂自然下垂且略离开躯干、双腿平稳；身体正后方对准镜头。手臂与腿部位置应与正面视图对应，不得新增转头、扭腰或单腿屈膝动作。
 - **左侧面（右下）：** 身体严格旋转 90° 朝向画面左侧；头、胸腔、骨盆与双脚朝向一致，保持中立站姿，不前倾、不后仰、不扭转躯干。双臂自然下垂，近侧手臂不得遮住整个躯干轮廓；双腿自然并立或仅有必要的轻微前后错位以区分轮廓，不做迈步动作。
 - 三视图使用统一的正交/近似正交角色设定视角，避免广角透视和明显镜头透视；地面基线、人物比例、镜头高度与全身尺度保持一致。侧视图是严格 90° 侧面，不是 3/4 角度。
+- **几何对齐验收：** 三个全身视图使用同一画面高度与近似相同的角色像素高度；头顶高度、脚底基线和画面中心轴尽可能对应。不要为每格单独使用夸张透视、不同焦段感、不同相机高度或不同远近比例。正面与背面肩宽、腰线、胯部宽度和腿长应合理对应；侧面只因真实侧向投影而显得更窄，不得把角色缩小或改变身高。
+- 若生成图出现背景透视、脚底线不齐、头顶高度跳变、侧面呈 3/4 角度或各视图比例不一致，应判定为转面精度失败；不能仅凭姿势静止就判定标准三视图通过。
 - 服装可以自然垂落，但不得为展示裙摆或配件而主动抬手、拉扯、掀起或展开衣物。复杂服装以中立站姿下真实自然的垂坠形态呈现。
 - 若参考图是动态姿势，提取并保留角色的外观、服装、材质、配色与配饰；**只把姿势标准化**。只有用户明确要求保留原始动态/动作姿势时，才允许覆盖本条标准转面规则。
 
@@ -156,6 +158,21 @@ metadata:
 9. **光影**：自然柔光、影棚光、阴影强弱、色温与对比度。
 
 只描述参考图中确实可见的特征；看不清的细节标记为未知，不要自行编造。保留参考图中具有辨识度的设计元素，不要为了“统一风格”而擅自替换服装或配饰。
+
+### 跨视图服装结构锚点（新增硬性流程）
+
+在生成前，先建立一份简短的“角色结构锚点表”，按可见证据记录，不要只写“同一套服装”：
+
+- **头部与发型：** 发色、发长、刘海/分缝、编发或盘发结构、发饰位置、发束轮廓。
+- **颈部与上身：** 领口形状、项圈/围巾、肩带、袖型、袖长、蕾丝/荷叶边边缘、上衣分片与开口。
+- **腰部与闭合结构：** 胸衣/束腰的轮廓、前后片、缝线、扣带、纽扣、系带、腰带和金属件的相对位置与数量。
+- **下装与层次：** 腰线、裙/裤的版型、布料层数、开衩、叠片、垂坠方向、主要图案的分布区域。
+- **鞋袜与配件：** 鞋型、鞋跟、靴筒、袜子长度、手套、首饰与其他显著配件。
+- **材质与配色：** 各部件的主色、辅色、花纹、透明度、皮革/金属/蕾丝等材质类别。
+
+每个锚点标记 `OBSERVED`、`INFERRED` 或 `UNKNOWN`。正面、背面和侧面应呈现同一结构在不同视角下的合理投影；不能把“视角看不到”误当成“可以删除”，也不能把不可见的背面细节编造成确定设计。生成后逐项比对锚点表，特别检查领口、袖型、腰封闭合方式、裙摆层次、图案位置和鞋靴。
+
+若一次整图生成导致服装结构跨格漂移，优先采用参考图条件下的单面板生成/修复；每个面板通过锚点检查后再拼版。拼版只负责几何布局，不应通过重新生成来修正边界。
 
 ### 参考信息置信度与缺失细节处理
 
@@ -314,7 +331,7 @@ metadata:
 **路径 D：没有图像生成能力**
 输出完整、可复制的提示词与执行步骤，并明确说明本轮只完成了提示词/工作流，没有实际生成图像。
 
-**分格生成与拼版：** 若模型无法稳定生成准确四格，可分别生成四个面板再拼版。先分别验收源图，再验收拼版；使用等比例缩放与留白，不得拉伸图像。拼版后重新检查面板顺序、尺寸、边界和色彩一致性。
+**分格生成与拼版：** 若模型无法稳定生成准确四格，或实测发现跨视图服装细节漂移/三视图透视不一致，应优先分别生成四个面板。三个全身视图使用相同相机高度与近似正交视角，并在拼版前对齐头顶高度、脚底基线和人物尺度；右上特写独立按脸部占比构图。先分别验收源图，再按精确坐标拼版；使用等比例缩放与留白，不得拉伸图像。拼版后重新检查面板尺寸、边界、服装锚点、姿态、色彩与光线。若缺少精确裁切/拼版工具，明确标记 `NOT_VERIFIED`，不得声称几何精确。
 
 **阶段门槛：** 已获得候选图，或已明确当前环境只能交付提示词；没有虚报工具能力或处理结果。
 
@@ -361,6 +378,8 @@ metadata:
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 三个全身视图均为静态标准转面姿势，不含走路、抬腿、扭腰、倾斜重心、提裙、叉腰或其他动态摆拍动作。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 正面、背面、侧面三视图的头部、肩线、骨盆、手臂和腿部姿势相互对应，未因视角切换而变成不同动作。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 三视图采用平视、低透视或正交式角色设定视角，人物垂直基线与全身尺度一致。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 三个全身视图的头顶高度、脚底基线、相机高度和角色像素高度基本对应，没有明显透视缩放或脚底线跳变。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 正面、背面、侧面的肩线、腰线、胯部、袖型、腰部闭合结构和下装层次在视角变化下保持合理对应。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上是脸部景别的紧凑正面特写，而非普通肩部以上肖像；头顶至下巴完整入镜，头部约占面板高度 75%–90%。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上头部正对镜头、眼睛平视，鼻梁接近中轴、双眼均可见；没有 3/4 角度、侧脸、明显歪头或俯仰机位。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上颈部/肩部只在底边少量出现，胸口和上半身没有抢占画面；脸部成为画面主体。
@@ -383,6 +402,7 @@ metadata:
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 四格为同一角色。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 发型、发色、服装、配饰、体型、肤色与参考图一致。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 背面与侧面合理呈现同一套服装结构，没有无依据地新增或丢失关键设计。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 角色结构锚点表中的关键部件（领口、袖型、腰封/扣带、裙裤层次、主要纹样、鞋靴和配件）已逐视图核对；差异可由视角遮挡解释，而非设计漂移。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 参考图未展示的区域未被擅自添加醒目的新设计；必要推断保持简洁，并已标注不确定性。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 人体比例自然，无明显肢体畸形或多余肢体。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 三个全身视图的角色高度与镜头尺度接近，差异来自视角而非缩放失控。
@@ -411,7 +431,7 @@ metadata:
 ### 英文主提示词
 
 ```text
-Create a high-quality 9:16 vertical character reference sheet arranged as a mathematically even 2x2 grid of four equal-width and equal-height panels, with no borders or divider lines. Keep all panel boundaries aligned; no panel may cross the center line. Use the exact same character from the reference image in every panel. Preserve the original design faithfully wherever visible in the reference: outfit construction, hairstyle silhouette, hair color, accessories, body proportions, materials, color palette, makeup style, and visual medium. Do not invent distinctive details in areas hidden or cropped out of the reference; use the simplest neutral continuation only when a full-body view requires it. {CHARACTER ANCHORS}. Clean neutral studio background, consistent soft key light and gentle fill, consistent white balance and exposure, natural contact shadows, crisp material separation, realistic fabric folds and stitching, detailed leather and metal hardware, clean hair strand grouping, natural skin texture in the clear portrait, anatomically correct hands and feet, balanced negative space, eye-level camera in all panels, matched scale across full-body views, no perspective distortion. High-resolution clean output with fine but natural detail; no plastic skin, no fake HDR, no oversharpening, no compression artifacts.
+Create a high-quality 9:16 vertical character reference sheet arranged as a mathematically even 2x2 grid of four equal-width and equal-height panels, with no borders or divider lines. Keep all panel boundaries aligned; no panel may cross the center line. Use the exact same character from the reference image in every panel. Preserve the original design faithfully wherever visible in the reference: outfit construction, hairstyle silhouette, hair color, accessories, body proportions, materials, color palette, makeup style, and visual medium. Do not invent distinctive details in areas hidden or cropped out of the reference; use the simplest neutral continuation only when a full-body view requires it. {CHARACTER ANCHORS}. Clean neutral studio background, consistent soft key light and gentle fill, consistent white balance and exposure, natural contact shadows, crisp material separation, realistic fabric folds and stitching, detailed leather and metal hardware, clean hair strand grouping, natural skin texture in the clear portrait, anatomically correct hands and feet, balanced negative space. For the three full-body turnaround panels, use the same eye-level orthographic or near-orthographic camera, same camera height and same character scale; align head-top level and shoe-sole baseline, avoid wide-angle perspective, foreshortening, perspective size drift, and mismatched camera distance. Match every visible garment construction detail across front, back, and side views; preserve neckline, sleeve shape, closures, seams, belts, skirt/trouser layers, pattern placement, footwear, and accessory count. High-resolution clean output with fine but natural detail; no plastic skin, no fake HDR, no oversharpening, no compression artifacts.
 
 TOP-LEFT PANEL: Full-body FRONT ORTHOGRAPHIC TURNAROUND VIEW in a standardized neutral standing pose, facing directly toward the camera. Stand upright with level shoulders and pelvis, head level, weight evenly distributed on both feet, both feet flat and pointing forward. Arms hang naturally with a small consistent gap from the torso; hands relaxed and fingers visible. No fashion-model pose, no hip shift, no torso twist, no bent knee, no lifted leg, no walking, no gesture, and no holding or lifting the clothing. Show the entire body from the top of the head to the bottoms of both shoes; do not crop any part. The face must have NO visible facial features: no eyes, eyeballs, eyelids, eyebrows, nose, nostrils, lips, or mouth line. Preserve a smooth, natural skin surface with believable facial volume, skin tone, and lighting. This is not blur, mosaic, a mask, or hair covering the face. Keep the face outline, hairline, bangs, ears, neck, and accessories intact. If needed, remove the features with localized inpainting only inside the facial skin region after generation.
 
@@ -457,7 +477,8 @@ All four panels show the exact same character and consistent outfit. No text, no
 | 右上景别过远、变成肩部以上肖像 | 重申 `tight front-facing face close-up, head fills 75–90% of panel height, top of hair to chin fully visible, shoulders only at bottom edge, no torso`；必要时单独生成右上格后再按固定网格拼版 |
 | 右上角度不是正脸或变成 3/4 | 重申 `square frontal face, eye-level camera, both eyes visible and balanced, nose centered, no head turn, no tilt, no three-quarter view`；单独生成/修复右上格后重新验收 |
 | 右上特写被误删五官 | 恢复原始清晰面部或单独修复右上格，确保完整五官清晰可见 |
-| 四格服装细节不一致 | 增强角色锚点，逐项列出关键服装结构；优先基于同一角色图进行局部编辑 |
+| 三视图透视、基线或人物尺度不一致 | 强化 `same orthographic camera, same camera height, matched character scale, aligned head-top level and shoe-sole baseline, no wide-angle perspective, no foreshortening`；必要时单独重做失败的全身面板，并在拼版前统一缩放与基线 |
+| 四格服装细节不一致 | 建立并逐项核对角色结构锚点表；明确领口、袖型、肩带、腰封/扣带、缝线、裙摆层次、图案位置、鞋靴与配件数量；优先使用参考图条件下的单面板修复，避免整张图重生成 |
 | 背面服装结构不合理 | 仅补充参考图能够支持的背面结构；不确定部分保持简洁，不凭空添加设计 |
 | 风格偏离参考图 | 删除与参考图冲突的风格词，重新强调参考图的媒介、材质、光线和色彩 |
 | 画面看起来廉价、塑料感强 | 减少夸张的“超高清/完美皮肤”词汇，强调自然材质响应、真实阴影、细腻但不过度的皮肤纹理 |
