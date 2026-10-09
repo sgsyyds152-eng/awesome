@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create and refine character reference sheets from user-provided images. Use when generating, editing, or validating 2x2 character sheets, front/back/side turnarounds, consistent character views, featureless-face panels, or image-generation prompts for character design."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.5.0。按 Agent Skills 开放规范整理元数据、触发条件、工作流阶段、能力检查、验收门槛与交付要求。保留固定四宫格、左上无五官、右上五官清晰、参考图一致性和失败回退规则。
+> 版本：1.6.0。强化右上格“正面脸部特写”的景别定义、面部占画比例、正脸角度与构图验收；避免退化为肩部以上常规人像或三分之二侧脸。其余固定四宫格、左上无五官、参考图一致性和失败回退规则保持不变。
 
 ## 0. 触发范围与执行契约
 
@@ -68,7 +68,7 @@ metadata:
 | 位置 | 视角与构图 | 必须满足 |
 |---|---|---|
 | 左上 | 正面全身全景 | 人物正对镜头，标准放松站姿，双手自然下垂；从头到脚完整入镜，双脚和鞋子完整可见；**面部无可见五官（无眼睛、眉毛、鼻子、嘴巴）** |
-| 右上 | 正面面部特写 | 肩部以上，正脸正视镜头，中性、平淡、无表情；眼睛、鼻子、嘴巴及面部细节清晰可辨，**禁止模糊** |
+| 右上 | 正面脸部特写（Close-up） | **以脸部为主体的紧凑特写**，头部正对镜头、双眼平视；完整保留头顶发型轮廓至下巴，脸部占据画面主要区域；仅允许少量颈部/肩部边缘，不得退化为肩部以上常规人像、半身像或 3/4 侧脸；五官清晰锐利，**禁止模糊** |
 | 左下 | 背面全身全景 | 人物背对镜头，自然放松站立；从头到脚完整入镜，展示发型背面、服装后背及整体轮廓 |
 | 右下 | 左侧面全身全景 | 人物身体严格旋转 90°，面朝画面左侧；纯侧面，不是 3/4 侧面；从头到脚完整入镜 |
 
@@ -77,7 +77,9 @@ metadata:
 - 四格尺寸尽可能相等，位置和顺序不可更改。
 - 四格均为平视机位（eye-level），不仰拍、不俯拍、不鸟瞰。
 - 三格全身图必须完整展示头部、身体、腿部、鞋子及鞋底，不得裁切头顶、脚尖或鞋底。
-- 右上格仅为面部特写，不得替换成半身像或全身像。
+- 右上格必须是**脸部景别的正面特写**，不是泛指“肩部以上肖像”：头顶至下巴完整入镜，头部/脸部成为画面绝对主体；肩膀只可在底边少量出现，胸口和上半身不得占据明显画面面积。
+- 右上格必须正对镜头：头部无明显左右转角或倾斜，鼻梁大致位于面部中轴，双眼均完整可见且视觉大小合理；禁止 3/4 角度、侧脸、俯拍、仰拍或夸张透视。
+- 右上格可保留参考图中的眼镜、刘海、耳饰等设计，但不得让配饰或头发遮挡关键五官；画面应优先呈现完整、清晰的脸部信息。
 - 所有格子中的角色必须是同一个人；不得因视角变化而改变发色、发型、服装、配饰、体型或肤色。
 - 背景统一为纯白或参考图要求的统一背景；默认使用干净的纯白影棚背景。
 - 格子之间不添加边框、分隔线、标签、文字、水印或额外装饰。
@@ -106,12 +108,14 @@ metadata:
 - 不要抹掉整张脸，不要改变头部形状、肤色、发型、头部大小或光照方向。编辑边界应限制在面部皮肤区域。
 - 若模型无法可靠生成自然无五官面部，先生成正常清晰底图，再对左上格的面部皮肤区域做局部修复/重绘；只编辑脸部，不重绘头发、身体、服装或其他面板。
 
-### 右上格：必须清晰
+### 右上格：正面脸部特写与清晰度（硬约束）
 
-- 右上格面部特写必须保持完整清晰，眼睛、鼻子、嘴巴、眉毛、皮肤纹理均清晰对焦。
-- 不允许任何面部模糊、马赛克、遮挡、景深虚化或运动模糊。
-- 表情为自然中性表情，不微笑、不皱眉、不张嘴做夸张表情。
-- 如果右上格出现模糊，即使其他部分合格，也判定该版本不通过。
+- **景别定义：脸部特写（face close-up）**。画面重点是脸，而不是肩部、胸口或上半身。头顶发型轮廓、额头、双眼、鼻子、嘴巴、下巴应完整呈现；除非参考图造型本身需要，不得切掉头顶、刘海关键轮廓或下巴。
+- **画面占比：** 头部从发顶到下巴约占面板高度的 75%–90%；脸部位于面板中央，左右留白适度。颈部和肩部只允许在画面下缘少量出现，不得使用远景或普通肩部以上人像构图。
+- **正面角度：** 面部正对镜头，头部水平、眼睛平视；鼻梁接近垂直中轴，双眼同时可见且不因转头产生明显大小差。不得使用 3/4 视角、侧脸、歪头姿态、俯拍或仰拍。
+- **焦点与表情：** 眼睛、眉毛、鼻子、嘴巴和面部轮廓全部清晰对焦；自然中性表情，不微笑、不皱眉、不张嘴做夸张表情。
+- **造型保留：** 忠实保留参考图中的发型、眼镜、妆容和面部可见特征；允许刘海自然覆盖少量额头，但不得遮住关键五官。
+- 不允许面部模糊、马赛克、遮挡、景深虚化或运动模糊。如果右上格虽清晰但景别过远、不是正脸，或头部被明显转成 3/4 角度，仍判定该硬性项目 `FAIL`。
 
 ### 面部局部修复规范（用于避免误改其他区域）
 
@@ -344,7 +348,9 @@ metadata:
 ### B. 视角与构图
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 四格均为平视机位。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左上人物正对镜头、标准放松站姿、双手自然下垂。
-- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上为肩部以上正面特写，正视镜头，中性表情。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上是脸部景别的紧凑正面特写，而非普通肩部以上肖像；头顶至下巴完整入镜，头部约占面板高度 75%–90%。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上头部正对镜头、眼睛平视，鼻梁接近中轴、双眼均可见；没有 3/4 角度、侧脸、明显歪头或俯仰机位。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上颈部/肩部只在底边少量出现，胸口和上半身没有抢占画面；脸部成为画面主体。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左下为背对镜头的自然站姿。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右下为严格 90° 左侧面，人物面朝画面左侧，不是 3/4 侧面。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左上、左下、右下均从头到脚完整可见，双脚和鞋底未裁切。
@@ -354,6 +360,8 @@ metadata:
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左上格脸部平滑自然，无模糊、马赛克、五官残影、恐怖空洞或面具感。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 左上格脸部轮廓、肤色、光影、发际线、刘海、耳朵和饰品自然保留。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 右上格五官完全清晰，没有模糊、马赛克、遮挡或失焦。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上景别确为紧凑脸部特写：头顶至下巴完整，头部占面板高度约 75%–90%，肩部/胸口没有占据明显面积。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 右上为严格正面脸部角度，双眼可见且比例平衡，无 3/4 转头、侧脸、明显歪头或高低机位。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 无五官处理仅发生在左上格，没有扩散至其他格子。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 若采用局部后处理，右上、左下、右下三个面板未被重新生成或意外修改。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 若宣称蒙版外像素未改变，已使用实际像素差异或等效对比方法验证；否则必须标记 `NOT_VERIFIED`。
@@ -394,7 +402,7 @@ Create a high-quality 9:16 vertical character reference sheet arranged as a math
 
 TOP-LEFT PANEL: Full-body front view, standing straight in a neutral relaxed pose, facing directly toward the camera, arms resting naturally at the sides. Show the entire body from the top of the head to the bottoms of both shoes; do not crop any part. The face must have NO visible facial features: no eyes, eyeballs, eyelids, eyebrows, nose, nostrils, lips, or mouth line. Preserve a smooth, natural skin surface with believable facial volume, skin tone, and lighting. This is not blur, mosaic, a mask, or hair covering the face. Keep the face outline, hairline, bangs, ears, neck, and accessories intact. If needed, remove the features with localized inpainting only inside the facial skin region after generation.
 
-TOP-RIGHT PANEL: Front-facing close-up portrait from the shoulders up, looking directly at the camera with a neutral, expressionless face. The entire face must be sharp and clearly focused, including eyes, nose, and mouth. Absolutely no blur, mosaic, obstruction, or defocus on the face.
+TOP-RIGHT PANEL: A TIGHT, FRONT-FACING FACE CLOSE-UP, NOT a generic shoulders-up portrait. The head faces the camera squarely at eye level; no three-quarter turn, no side view, no tilted head, no high or low camera angle. Frame the complete head from the top of the hairstyle to the chin. The head occupies approximately 75–90% of the panel height; the face is the dominant subject, centered with balanced side margins. Only a small amount of neck or shoulder may appear along the bottom edge; do not show a prominent chest or upper torso. Both eyes must be visible and balanced in size, the nose close to the facial centerline, and the eyebrows, eyes, nose, lips, and chin all fully inside the frame. Preserve reference-specific hair, glasses, makeup, and facial features without letting them obscure key features. Neutral expression. Every facial feature must be crisp and clearly focused. Absolutely no blur, mosaic, obstruction, defocus, three-quarter angle, side profile, or distant portrait framing.
 
 BOTTOM-LEFT PANEL: Full-body back view, relaxed natural standing pose, facing away from the camera. Show the complete head-to-toe silhouette and both shoes, including the back hairstyle and back construction of the exact same outfit.
 
@@ -410,7 +418,7 @@ All four panels show the exact same character and consistent outfit. No text, no
 
 左上格：正面全身图，人物正对镜头，标准放松站姿，双手自然下垂。从头顶到双脚鞋底完整入镜，不得裁切。面部必须完全没有可见五官：不显示眼睛、眼球、眼睑线、眉毛、鼻梁、鼻尖、鼻孔、嘴唇或嘴线。保留自然平滑的肤色、脸部体积感与光影，不得使用模糊、马赛克、头发遮挡或面具效果替代。脸部轮廓、发际线、刘海、耳朵、颈部和饰品保持原样；必要时在生成后仅对面部皮肤区域做局部修复。
 
-右上格：肩部以上的正面面部特写，人物正视镜头，表情中性、平淡、无情绪。眼睛、鼻子、嘴巴及整个面部必须清晰对焦。严禁模糊、马赛克、遮挡或失焦。
+右上格：紧凑的正面脸部特写（不是普通肩部以上肖像）。头部正对镜头、眼睛平视，无 3/4 转头、侧脸、明显歪头或俯仰机位。完整保留发顶至下巴，头部约占该格高度的 75%–90%，脸部居中；颈部/肩部仅可在底边少量出现，胸口和上半身不得成为主体。双眼均完整可见且大小自然平衡，鼻梁接近面部中轴，眉毛、眼睛、鼻子、嘴唇和下巴均清晰入镜。保留参考图的发型、眼镜与妆容，但不得遮挡关键五官。中性表情，所有五官锐利清晰。严禁模糊、马赛克、遮挡、失焦或远景肖像构图。
 
 左下格：背面全身图，人物背对镜头，自然放松站立，完整展示从头顶到鞋底的整体轮廓、发型背面与服装后背，双脚和鞋子完整可见。
 
@@ -432,6 +440,8 @@ All four panels show the exact same character and consistent outfit. No text, no
 | 左上脸部出现修补痕迹或轮廓被破坏 | 撤销局部编辑，缩小面部蒙版并重做皮肤融合；不要覆盖发际线、脸部轮廓或耳朵 |
 | 左上脸部仍有五官残影或变成恐怖空洞 | 用自然皮肤色调与光影重建面部，去除眼眶/鼻影/嘴线残影；若无法保证自然，标记 `NOT_VERIFIED` |
 | 局部修正影响到其他面板 | 撤销本次修改，从原始四宫格恢复其他三格，只替换已处理的左上格 |
+| 右上景别过远、变成肩部以上肖像 | 重申 `tight front-facing face close-up, head fills 75–90% of panel height, top of hair to chin fully visible, shoulders only at bottom edge, no torso`；必要时单独生成右上格后再按固定网格拼版 |
+| 右上角度不是正脸或变成 3/4 | 重申 `square frontal face, eye-level camera, both eyes visible and balanced, nose centered, no head turn, no tilt, no three-quarter view`；单独生成/修复右上格后重新验收 |
 | 右上特写被误删五官 | 恢复原始清晰面部或单独修复右上格，确保完整五官清晰可见 |
 | 四格服装细节不一致 | 增强角色锚点，逐项列出关键服装结构；优先基于同一角色图进行局部编辑 |
 | 背面服装结构不合理 | 仅补充参考图能够支持的背面结构；不确定部分保持简洁，不凭空添加设计 |
