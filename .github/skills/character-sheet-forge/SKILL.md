@@ -421,8 +421,6 @@ BOTTOM-LEFT PANEL: Full-body BACK ORTHOGRAPHIC TURNAROUND VIEW in the exact same
 
 BOTTOM-RIGHT PANEL: Full-body LEFT SIDE ORTHOGRAPHIC TURNAROUND VIEW, rotated exactly 90 degrees and facing the left edge of the image, not a three-quarter view. Keep a standardized neutral standing pose: head, chest, pelvis, and feet aligned toward the left; torso upright with no forward/backward lean or twist; arms relaxed at the sides; legs in a stable standing position, not walking. Avoid wide-angle perspective. Show the entire body from head to shoe soles.
 
-OLD BOTTOM-RIGHT PANEL REMOVED: the character's face and body oriented toward the LEFT edge of the image. This must be a true side view, NOT a three-quarter view. Relaxed natural standing pose; show the complete body from head to the bottoms of both shoes.
-
 All four panels show the exact same character and consistent outfit. No text, no watermark, no labels, no extra people, no panel borders, no cropped head or feet, no missing shoes, no altered costume, no invented ornaments, no swapped panel order, no bad anatomy, no extra fingers, no fused limbs, no inconsistent lighting, no mismatched color grading, no plastic skin, no oversharpening, no fake HDR, no compression artifacts. The featureless-face rule applies ONLY to the top-left panel; the top-right face remains fully sharp and shows complete facial features. Prioritize layout, viewing angles, full-body completeness, and featureless-face rules over decorative effects.
 ```
 
