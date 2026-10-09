@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create, test, edit, and validate character reference sheets from reference images. Activate for requests about character turnaround sheets, 2x2 four-panel character sheets, front/back/side orthographic views, face close-ups, featureless-face panels, costume consistency, character model sheets, prompt optimization, or testing/updating this skill. Chinese triggers include 角色三视图、四宫格、角色设定图、正背侧视图、正面脸部特写、左上无五官、标准转面、服装一致性、测试skill、更新skill。 Use when the user explicitly invokes /character-sheet-forge or asks to use Character Sheet Forge."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.10.0"
+  version: "1.11.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.10.0。新增高清无噪点画质规范、纹理保真、分辨率诚实声明与画质专项验收/修复流程。
+> 版本：1.11.0。基于多轮角色图测试，强化道具跨视图锁定、参考图裁切细节的保守推断、严格侧视与分面板回归验收。
 
 ## 0. 触发范围与执行契约
 
@@ -215,6 +215,17 @@ metadata:
 每个锚点标记 `OBSERVED`、`INFERRED` 或 `UNKNOWN`。正面、背面和侧面应呈现同一结构在不同视角下的合理投影；不能把“视角看不到”误当成“可以删除”，也不能把不可见的背面细节编造成确定设计。生成后逐项比对锚点表，特别检查领口、袖型、腰封闭合方式、裙摆层次、图案位置和鞋靴。
 
 若一次整图生成导致服装结构跨格漂移，优先采用参考图条件下的单面板生成/修复；每个面板通过锚点检查后再拼版。拼版只负责几何布局，不应通过重新生成来修正边界。
+
+### 道具与裁切信息跨视图锁定（v1.11.0）
+
+角色参考图中的法杖、武器、手持物、头饰、披风、长垂带等高辨识度元素必须纳入结构锚点表，不能只锁定服装。
+
+- **道具清单：** 记录道具外形、主色、材质、装饰、长度比例、握持手、与身体的相对位置，以及参考图中实际可见的部分。
+- **跨视图策略：** 先决定道具是否属于角色设定图的必需元素。若保留，道具应在所有适用的全身视图中以合理、可解释的角度一致出现；握持手、杆身方向、顶部朝向和与人物的距离保持逻辑连续。背面因遮挡而不可见的部分可被遮挡，但不得无故换手、消失、复制或改变造型。
+- **避免道具破坏转面：** 若手持道具妨碍标准中立站姿、身体轮廓或视图对齐，优先将道具作为单独的配件展示规则处理；不得为了摆道具让人物抬手、扭腰或改成动态姿势。若用户要求严格人体转面且未要求手持道具，优先生成不持道具的三视图，并在交付说明中标记此选择。
+- **参考图裁切：** 若武器顶部、鞋靴、裙摆或其他部件被画面裁切，只复制可见形态与材质。不可见部分仅作最低限度的中性延续；禁止擅自设计醒目的尖顶、宝石、复杂雕花或新配件。重要轮廓不确定时标记 `INFERRED` 或 `UNKNOWN`。
+- **不得跨视图“升级设计”：** 不允许为了让背面更华丽而添加参考图没有支持的金饰、纹章、绑带、开衩、裙片或装饰。任何补全都应保持低辨识度，并在 QA 中注明推断。
+- **失败判定：** 道具造型、数量、颜色、握持关系或服装结构在不同面板中无合理原因地变化，均判为一致性 `FAIL`，不能因为画面清晰就判为通过。
 
 ### 参考信息置信度与缺失细节处理
 
@@ -448,6 +459,7 @@ metadata:
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 参考图未展示的区域未被擅自添加醒目的新设计；必要推断保持简洁，并已标注不确定性。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 人体比例自然，无明显肢体畸形或多余肢体。
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 三个全身视图的角色高度与镜头尺度接近，差异来自视角而非缩放失控。
+- [ ] `PASS/FAIL/NOT_VERIFIED` — 法杖/武器等保留道具在适用面板中的造型、数量、握持手、朝向与相对位置一致；被遮挡或裁切的细节未被擅自设计。
 
 ### E. 画面质量与美化
 - [ ] `PASS/FAIL/NOT_VERIFIED` — 风格与参考图/用户要求一致，没有擅自风格转换。
@@ -558,6 +570,7 @@ All four panels show the exact same character and consistent outfit. No text, no
 | 四格顺序错误 | 在提示词开头和每格标题中重复固定位置与内容；必要时先分别生成四格再合成 |
 | 三视图出现动态摆拍/动作不一致 | 明确 `standard neutral standing turnaround pose, evenly distributed weight, arms relaxed slightly away from torso, both feet flat, no hip shift, no bent knee, no lifted leg, no walking, no gesture, no holding or lifting clothing`；分别修复对应面板并复核三视图姿势对应关系 |
 | 右下变成 3/4 侧面 | 强化 `strict 90-degree left side profile, facing left, not three-quarter view` |
+| 侧面身体朝向不一致或道具导致人物扭姿 | 分别约束头部、肩线、胸廓、骨盆、膝盖和脚尖均朝向画面左侧；保持标准中立站姿，道具不得迫使人物抬臂或扭转躯干 |
 | 全身格裁切脚部 | 增加人物与画面边缘的留白，明确 `full head-to-sole view, both shoes fully visible, no cropping` |
 | 左上仍残留五官 | 不使用模糊；仅在左上格面部皮肤范围进行局部修复，清除眼、眉、鼻、口及残影 |
 | 左上脸部出现修补痕迹或轮廓被破坏 | 撤销局部编辑，缩小面部蒙版并重做皮肤融合；不要覆盖发际线、脸部轮廓或耳朵 |
@@ -568,6 +581,7 @@ All four panels show the exact same character and consistent outfit. No text, no
 | 右上特写被误删五官 | 恢复原始清晰面部或单独修复右上格，确保完整五官清晰可见 |
 | 三视图透视、基线或人物尺度不一致 | 强化 `same orthographic camera, same camera height, matched character scale, aligned head-top level and shoe-sole baseline, no wide-angle perspective, no foreshortening`；必要时单独重做失败的全身面板，并在拼版前统一缩放与基线 |
 | 四格服装细节不一致 | 建立并逐项核对角色结构锚点表；明确领口、袖型、肩带、腰封/扣带、缝线、裙摆层次、图案位置、鞋靴与配件数量；优先使用参考图条件下的单面板修复，避免整张图重生成 |
+| 法杖/武器在不同面板中变形、换手、消失或新增装饰 | 建立道具锚点，锁定可见轮廓、颜色、长度、握持手和相对位置；参考图裁切部分只做最低限度延续，优先单独重生成失败面板并进行回归检查 |
 | 背面服装结构不合理 | 仅补充参考图能够支持的背面结构；不确定部分保持简洁，不凭空添加设计 |
 | 风格偏离参考图 | 删除与参考图冲突的风格词，重新强调参考图的媒介、材质、光线和色彩 |
 | 画面看起来廉价、塑料感强 | 减少夸张的“超高清/完美皮肤”词汇，强调自然材质响应、真实阴影、细腻但不过度的皮肤纹理 |
