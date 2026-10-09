@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create, test, edit, and validate character reference sheets from reference images. Activate for requests about character turnaround sheets, 2x2 four-panel character sheets, front/back/side orthographic views, face close-ups, featureless-face panels, costume consistency, character model sheets, prompt optimization, or testing/updating this skill. Chinese triggers include 角色三视图、四宫格、角色设定图、正背侧视图、正面脸部特写、左上无五官、标准转面、服装一致性、测试skill、更新skill。 Use when the user explicitly invokes /character-sheet-forge or asks to use Character Sheet Forge."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.15.0"
+  version: "1.16.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.15.0。新增服装轮廓与层次锁定、动态布料结构保真、跨面板设计锚点和反风格化漂移验收，减少长裙/拖尾被重新设计及背面装饰臆造。
+> 版本：1.16.0。强化动态参考图到标准三视图的姿势归一化、场景装置剥离、遮挡区域保守补全与回归验收，避免把原图动作误当作三视图姿势。
 
 ## 0. 触发范围与执行契约
 
@@ -113,6 +113,32 @@ metadata:
 | 右上 | 正面脸部特写（Close-up） | **以脸部为主体的紧凑特写**，头部正对镜头、双眼平视；完整保留头顶发型轮廓至下巴，脸部占据画面主要区域；仅允许少量颈部/肩部边缘，不得退化为肩部以上常规人像、半身像或 3/4 侧脸；五官清晰锐利，**禁止模糊** |
 | 左下 | 背面全身全景 | 人物背对镜头，自然放松站立；从头到脚完整入镜，展示发型背面、服装后背及整体轮廓 |
 | 右下 | 左侧面全身全景 | 人物身体严格旋转 90°，面朝画面左侧；纯侧面，不是 3/4 侧面；从头到脚完整入镜 |
+
+### 动态参考图归一化：标准三视图不得复制原图动作（v1.16.0）
+
+此规则专门处理参考图中存在躺卧、抬腿、扭腰、舞蹈/杂技姿势、悬挂装置、椅子或大型道具的情况。除非用户明确要求“保留原动态姿势”，否则三视图一律输出标准中立站姿，而不是动态姿势的三个转面。
+
+**转换原则**
+- 锁定角色身份与设计：发型、发色、脸部特征（左上格仍按无五官规则处理）、服装版型、配色、材质、饰品、鞋靴及可确认的道具设计。
+- 归一化人体姿势：将躺卧、坐姿、悬挂、抬腿、屈膝、扭腰、交叉腿、手臂举高等动作，转换为直立、重心均匀、双脚落地、头部端正、肩线水平、双臂自然下垂的标准站姿。
+- 禁止把动作带来的肢体交叠、极端透视、衣物被拉扯形变或身体遮挡直接复制到标准三视图。
+- 场景装置（例如空中圆环、吊索、舞台绳索、椅子、栏杆、摄影棚支架）默认不属于角色设计。除非用户明确要求保留，否则从三视图主体中移除，不得把它们误画成服装结构或随身配件。
+- 手持武器或核心角色道具只有在参考图能确认其为角色装备且用户希望保留时才纳入；道具不得迫使人物抬手、扭身或偏离中立站姿。无法在中立站姿中自然呈现时，优先将其排除于标准三视图之外，并在交付说明中注明。
+- 对动态姿势遮挡的服装区域，仅根据可见的版型、材质和结构做保守延续。不得臆造醒目的背部图案、绑带、扣具、纹章、开口或额外饰品；不确定内容应简洁处理并标记为推断。
+- 服装在中立站姿下按重力自然垂落。保留裙摆/拖尾的层数、色块、材质和可确认轮廓，但不得为了复刻原图动态而保留不自然悬空、拉伸或扭曲的布料形态。
+
+**生成前检查**
+- [ ] 已区分“角色固有设计”“可保留的角色道具”和“外部场景装置”。
+- [ ] 已明确用户是否要求保留原动态姿势；未明确时默认标准中立站姿。
+- [ ] 已将正面、背面、严格 90° 左侧面定义为同一中立站姿的三个对应投影。
+- [ ] 已列出因原图遮挡而无法确认的服装细节，避免模型自行补充醒目设计。
+
+**回归验收**
+- [ ] PASS/FAIL/NOT_VERIFIED — 三个全身视图均为标准直立中立站姿，而非原图躺卧、抬腿、悬挂或摆拍动作。
+- [ ] PASS/FAIL/NOT_VERIFIED — 正面、背面、左侧面的人体朝向与肢体位置符合标准转面定义；右下严格 90° 朝画面左侧。
+- [ ] PASS/FAIL/NOT_VERIFIED — 外部圆环、吊索、舞台绳索、椅子等未被误并入角色服装或无要求地保留在转面图中。
+- [ ] PASS/FAIL/NOT_VERIFIED — 服装在中立站姿下自然垂坠，未因姿势转换而重设计版型或新增无依据细节。
+- [ ] PASS/FAIL/NOT_VERIFIED — 遮挡区域的补全依据可见证据；无法确认的细节已保守处理或标记 NOT_VERIFIED。
 
 ### 全局构图规则
 
