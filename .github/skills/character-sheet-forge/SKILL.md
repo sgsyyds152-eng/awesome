@@ -1,9 +1,9 @@
 ---
 name: character-sheet-forge
-description: "Create and refine character reference sheets from user-provided images. Use when generating, editing, or validating 2x2 character sheets, front/back/side turnarounds, consistent character views, featureless-face panels, or image-generation prompts for character design."
+description: "Create, test, edit, and validate character reference sheets from reference images. Activate for requests about character turnaround sheets, 2x2 four-panel character sheets, front/back/side orthographic views, face close-ups, featureless-face panels, costume consistency, character model sheets, prompt optimization, or testing/updating this skill. Chinese triggers include 角色三视图、四宫格、角色设定图、正背侧视图、正面脸部特写、左上无五官、标准转面、服装一致性、测试skill、更新skill。 Use when the user explicitly invokes /character-sheet-forge or asks to use Character Sheet Forge."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.8.0"
+  version: "1.9.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -14,6 +14,48 @@ metadata:
 > 版本：1.8.0。根据实测补强标准转面图的正交视图与几何对齐、跨视图服装结构锚点、细节一致性验收，以及分面板生成、精确拼版和回归检查策略；保留标准中立站姿、右上正面脸部特写、左上无五官与固定四宫格规则。
 
 ## 0. 触发范围与执行契约
+
+### Skill 调用方式与触发条件（v1.9.0）
+
+本 Skill 采用“明确调用优先、语义匹配自动触发”的方式。它是可按需加载的工作流，不应在所有普通图片任务中默认启用。
+
+**方式 A：明确调用（最可靠）**
+
+在支持 Agent Skills 的 GitHub Copilot / 兼容 Agent 环境中，使用斜杠命令：
+
+`/character-sheet-forge`
+
+随后描述任务，例如：
+
+- `/character-sheet-forge 用这张参考图生成标准角色四宫格，严格按固定顺序输出。`
+- `/character-sheet-forge 测试当前 Skill，重点检查右上正面脸部特写和三视图正交对齐。`
+- `/character-sheet-forge 更新 Skill，增加服装跨视图一致性验收和失败修复规则。`
+
+如果当前宿主不支持斜杠命令，直接在自然语言中写明“使用 Character Sheet Forge Skill”，并提供参考图或目标文件路径。斜杠命令是否可用取决于 Agent 宿主及其技能发现配置；不要声称所有聊天产品都支持该命令。
+
+**方式 B：按描述自动触发**
+
+当用户意图与下列任一类任务匹配时，Agent 应加载本 Skill：
+
+- **生成类：** “用这张图生成角色三视图/四宫格/角色设定图”“做 front/back/side turnaround”“生成 character model sheet”。
+- **编辑类：** “修改右上角为正面脸部特写”“左上角去掉五官但不要模糊”“统一三视图站姿”“修复服装细节漂移”。
+- **验收类：** “测试 skill”“检查四宫格是否合格”“验证侧面是否严格 90°”“检查三视图比例和服装一致性”。
+- **工作流维护类：** “更新/优化 Character Sheet Forge”“迭代角色参考图 Skill”“补充调用方式、触发条件、质量检查或修复规则”。
+- **英文同义表达：** character sheet, character turnaround, model sheet, 2x2 character sheet, front/back/side views, orthographic turnaround, face close-up, featureless face, costume consistency, test/update this skill。
+
+**不应触发的情况**
+
+- 用户只问一般绘画理论、镜头语言或角色设计流程，且没有要求制作/编辑/验收角色参考图。
+- 用户请求与角色设定图无关的普通插画、风景、图标、海报或其他图像。
+- 用户仅提及“角色”或“图片”而没有相关工作流意图。存在歧义时，先询问是否要使用本 Skill，不要强行套用。
+
+**触发后的执行步骤**
+
+1. 确认可访问的参考图、当前 Skill 文件或目标产物；不要假设被跳过的历史消息或外部文件一定可访问。
+2. 识别任务是生成、局部编辑、验收，还是 Skill 文档维护；只执行与当前请求相关的分支。
+3. 若是图像任务，按本文件的四格顺序、面部规则、标准转面姿势和验收清单执行。
+4. 若是 Skill 维护任务，读取当前版本后进行最小、可验证的修改，递增版本号，检查 frontmatter、触发描述、相关规则和回归检查；只有远程写入并重新读取验证成功后，才报告已更新。
+5. 交付时区分“已触发/已编写提示词/已生成图像/已验收/已提交 Skill”，不得把其中一项当作另一项。
 
 ### 何时启用
 
