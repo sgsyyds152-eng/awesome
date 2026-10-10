@@ -3,7 +3,7 @@ name: character-sheet-forge
 description: "Create, test, edit, and validate character reference sheets from reference images. Activate for requests about character turnaround sheets, 2x2 four-panel character sheets, front/back/side orthographic views, face close-ups, featureless-face panels, costume consistency, character model sheets, prompt optimization, or testing/updating this skill. Chinese triggers include 角色三视图、四宫格、角色设定图、正背侧视图、正面脸部特写、左上无五官、标准转面、服装一致性、测试skill、更新skill。 Use when the user explicitly invokes /character-sheet-forge or asks to use Character Sheet Forge."
 compatibility: "For GitHub Copilot and other Agent Skills-compatible agents. Image generation, local image editing, and pixel-difference checks depend on tools available in the host environment."
 metadata:
-  version: "1.17.0"
+  version: "1.18.0"
   language: "zh-CN"
   category: "image-workflow"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 > 中文名称：角色参考图锻造工坊
 
-> 版本：1.17.0。新增角色锚点表、跨面板一致性优先级、分阶段生成与拼版决策、量化验收门槛和失败回归锁定，降低反复重生成导致的身份/服装漂移。
+> 版本：1.18.0。强化参考图分析、按工具能力适配的提示词交付、单变量迭代、失败原因记录与标准化验收报告，减少无效重生成并提高结果可复现性。
 
 ## 0. 触发范围与执行契约
 
@@ -907,4 +907,90 @@ All four panels show the exact same character and consistent outfit. No text, no
 - [ ] PASS/FAIL/NOT_VERIFIED — 所有硬性门槛均逐项记录状态；未用平均分抵消硬性失败。
 - [ ] PASS/FAIL/NOT_VERIFIED — 修复只针对失败项，并检查已通过项目是否回归失败。
 - [ ] PASS/FAIL/NOT_VERIFIED — 未对不可查看的分辨率、像素噪点、无损属性或局部像素不变性作无依据保证。
+
+## 13. 参考图分析、工具适配与可复现迭代（v1.18.0）
+
+本节将“看图—提取设计—生成—检查—修复—交付”整理为可复现流程。不得将理论流程写成已执行的图像操作；实际能力以当前宿主可用工具为准。
+
+### 13.1 参考图输入检查
+
+开始前先判断参考图是否实际可访问，并检查：
+- 主体是否完整可辨；图像是否被裁切、压缩、过曝、欠曝或遮挡。
+- 是否能辨认发型轮廓、服装前侧结构、鞋靴、配件数量、主辅色与材质。
+- 哪些结构能直接观察，哪些只能推断，哪些完全未知。
+- 目标是否要求标准中立转面，还是明确要求保留原动态姿势。
+
+将观察结果分成三类：
+- `OBSERVED`：参考图直接可见、证据明确。
+- `INFERRED`：为补全目标视图而做的最低限度推断。
+- `UNKNOWN`：没有足够证据，不应编造。
+
+若关键设计被遮挡，不要在提示词中用肯定语气描述推断细节。若用户希望完全忠实还原，应先请求更清晰或补充视角参考图；若用户希望直接继续，则采用低显著度、最简洁的中性补全，并在交付中说明。
+
+### 13.2 依据工具能力选择交付路径
+
+生成前确认当前宿主实际支持哪些能力：参考图输入、图像生成、局部编辑/蒙版、单面板输出、拼版、原始文件导出与像素检查。能力未提供或未验证时，不得假定存在。
+
+| 可用能力 | 推荐执行方式 | 必须披露的限制 |
+|---|---|---|
+| 可参考图生成且能稳定输出四格 | 先整图生成，再按硬性清单验收 | 模型可能无法精确遵循网格或视角 |
+| 可生成单图但四格布局不稳定 | 分别生成面板；只有宿主确实支持拼版时再合成 | 没有拼版工具时交付分面板结果与拼版说明，不声称已合成 |
+| 支持局部编辑/蒙版 | 对失败面板或区域做局部修复，随后回归检查 | 未比较源图前，不承诺蒙版外像素完全不变 |
+| 仅能生成提示词、无法生成图像 | 输出可直接复制的提示词和操作步骤 | 明确标记“尚未生成图像” |
+| 仅能查看预览，不能读取原始文件 | 只验收可见内容 | 分辨率、压缩、像素噪点及无损属性标记为 `NOT_VERIFIED` |
+
+### 13.3 提示词输出分层
+
+根据宿主限制，优先输出可直接执行的提示词，不要只给抽象建议。提示词应按以下顺序组织：
+1. **任务与画布**：9:16、2×2、面板顺序和无边框要求。
+2. **角色锚点**：身份、发型、服装结构、颜色、材质、配件。
+3. **逐格说明**：每格的视角、景别、姿势、裁切和脸部规则。
+4. **跨格一致性**：同一角色、同一服装、对应尺度与光线。
+5. **质量要求**：自然微细节、低噪点、干净背景、避免过度锐化。
+6. **负面约束**：视角错误、裁切、设计漂移、伪影与多余元素。
+
+若工具有提示词长度限制，优先提供“精简执行版”，保留所有硬约束和角色锚点；较长的详细版作为可选补充。不得把多个互相冲突的要求堆在同一提示词里。特别是“左上无五官”和“右上五官清晰”必须分别绑定到具体面板，不得只写成全局要求。
+
+### 13.4 单变量迭代协议
+
+每次尝试必须记录：版本编号、修改目标、唯一主要变量、结果、失败项与下一步。除非前一轮发现多个相互独立的硬性错误，否则一次只改变一个主要因素，避免无法判断哪项修改产生效果。
+
+建议记录格式：
+- `Attempt`: A01、A02……
+- `Target`: 右上正脸角度 / 右下侧面角度 / 服装后背 / 背景噪点等。
+- `Change`: 本轮唯一主要修改。
+- `Observed result`: 图像中实际可见的变化。
+- `Regression`: 已通过项目是否退化。
+- `Decision`: KEEP / REVERT / RETRY / NOT_VERIFIED。
+
+禁止无差别地反复追加“更高清、更精细、更完美”等泛化词汇。连续两次相同失败时，必须改变工作流（例如从整图切换为单面板），或明确说明工具限制；不得把相同提示词原样重复当作有效修复策略。
+
+### 13.5 交付报告模板
+
+每次执行生成、测试或修复后，按实际情况输出简明报告：
+
+- **Skill 版本**：实际使用的版本号。
+- **任务状态**：PROMPT_READY / GENERATED / PARTIALLY_REPAIRED / ACCEPTED / FAILED / NOT_VERIFIED。
+- **总验收状态**：PASS / FAIL / NOT_VERIFIED。
+- **硬性失败项**：列出面板和可观察的问题；没有则写“未观察到”，不能把未检查写成没有。
+- **未验证项**：列出无法从当前预览或工具能力确认的项目。
+- **本轮修改**：指出修复了什么，是否影响其他面板。
+- **下一步**：只提出针对失败项的动作；若全部硬约束通过，不为追求微小主观差异而无止境重生成。
+
+状态定义：
+- `PROMPT_READY`：提示词已准备，但没有生成图像。
+- `GENERATED`：已生成图像，但尚未完成验收。
+- `PARTIALLY_REPAIRED`：已修复部分失败项，仍有项目待检查。
+- `ACCEPTED`：所有硬性验收项均有可观察证据并通过。
+- `FAILED`：至少一个硬性验收项明确失败。
+- `NOT_VERIFIED`：关键项目无法可靠检查，不能确认通过或失败。
+
+### 13.6 v1.18.0 回归清单
+
+- [ ] PASS/FAIL/NOT_VERIFIED — 已确认参考图实际可访问，且记录可见、推断和未知信息。
+- [ ] PASS/FAIL/NOT_VERIFIED — 已根据宿主真实能力选择整图、分面板、局部修复或仅输出提示词的路径。
+- [ ] PASS/FAIL/NOT_VERIFIED — 提示词按面板绑定约束，左上无五官规则未扩散至其他格。
+- [ ] PASS/FAIL/NOT_VERIFIED — 每轮迭代记录目标、修改变量、观察结果和回归情况。
+- [ ] PASS/FAIL/NOT_VERIFIED — 连续相同失败后改变策略或说明工具限制，没有无意义地重复同一提示词。
+- [ ] PASS/FAIL/NOT_VERIFIED — 交付状态准确区分提示词、生成、修复和验收，没有夸大完成程度。
 
